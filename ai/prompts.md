@@ -84,3 +84,80 @@ Le pedí a la IA que, actuando como desarrollador senior Java/Spring Boot en ban
 
 - Crear el controlador REST `PaymentOrderController` en `api` con los endpoints:
   - `POST /payment-initiation/payment-
+
+## 4. Implementación de casos de uso, puerto legacy y stub SOAP
+
+**Fecha:** 2025-11-20  
+**Objetivo:** Completar el flujo de negocio desde el controlador REST hasta una integración simulada con el servicio SOAP legacy, siguiendo arquitectura hexagonal:
+API → Application (use cases) → Domain SPI (puerto) → Infrastructure (adapter SOAP stub).
+
+**Uso de IA (Cursor):**  
+Le pedí a la IA, actuando como desarrollador senior Java/Spring Boot en banca con Clean Architecture y SOLID, que realizara lo siguiente:
+
+1. **Definir el puerto hacia el sistema legacy (servicio SOAP):**
+   - Crear el paquete:
+     - `com.hiberus.payment_initiation.domain.spi`
+   - Crear la interfaz:
+     - `PaymentOrderLegacyClient`
+   - Métodos:
+     - `PaymentOrder initiatePaymentOrder(PaymentOrder paymentOrder);`
+     - `Optional<PaymentOrder> findById(String paymentOrderId);`
+     - `Optional<PaymentOrderStatus> findStatus(String paymentOrderId);`
+   - Rol: actuar como **abstracción** del servicio SOAP `PaymentOrderService`, desacoplando la lógica de negocio de la tecnología SOAP concreta.
+
+2. **Implementar los casos de uso en la capa application:**
+   - Crear el paquete:
+     - `com.hiberus.payment_initiation.application.impl`
+   - Implementar:
+     - `InitiatePaymentOrderService implements InitiatePaymentOrderUseCase`
+     - `RetrievePaymentOrderService implements RetrievePaymentOrderUseCase`
+     - `RetrievePaymentOrderStatusService implements RetrievePaymentOrderStatusUseCase`
+   - Inyectar `PaymentOrderLegacyClient` por constructor (Dependency Inversion).
+   - Lógica principal:
+     - `initiate(PaymentOrderInitiationCommand command)`:
+       - Construye un `PaymentOrder` de dominio a partir del comando.
+       - Asigna un estado inicial (`PaymentOrderStatus.INITIATED`).
+       - Delegar en `legacyClient.initiatePaymentOrder(paymentOrder)`.
+       - Devolver la entidad resultante.
+     - `retrieveById(String paymentOrderId)`:
+       - Delegar en `legacyClient.findById(paymentOrderId)`.
+       - Si no existe, lanzar `PaymentOrderNotFoundException`.
+     - `retrieveStatus(String paymentOrderId)`:
+       - Delegar en `legacyClient.findStatus(paymentOrderId)`.
+       - Si no existe, lanzar `PaymentOrderNotFoundException`.
+
+3. **Gestión de “no encontrado”:**
+   - Crear la excepción:
+     - `com.hiberus.payment_initiation.shared.exception.PaymentOrderNotFoundException`
+   - Extiende `RuntimeException` y construye un mensaje claro a partir del `paymentOrderId`.
+   - Esta excepción será mapeada más adelante a un `ErrorResponseDto` mediante `@ControllerAdvice`.
+
+4. **Crear la implementación stub del puerto SOAP en infraestructura:**
+   - En el paquete:
+     - `com.hiberus.payment_initiation.infrastructure.soap`
+   - Crear la clase:
+     - `LegacyPaymentOrderSoapClient implements PaymentOrderLegacyClient`
+   - Anotación: `@Component`.
+   - Comportamiento simulado:
+     - `initiatePaymentOrder(...)`:
+       - Genera un ID (por ejemplo con `UUID.randomUUID()` si no existe).
+       - Ajusta estado a `PENDING_EXECUTION`.
+       - Rellena `creationDateTime` y `lastUpdateDateTime` con `OffsetDateTime.now()`.
+       - Añade comentarios `// TODO` donde iría la llamada real al SOAP usando el WSDL.
+     - `findById(...)`:
+       - Devuelve un `Optional<PaymentOrder>` simulado.
+       - En algunos casos puede devolver `Optional.empty()` para probar el escenario “no encontrado”.
+     - `findStatus(...)`:
+       - Devuelve un `Optional<PaymentOrderStatus>` simulado (por ejemplo siempre `EXECUTED`), también con comentarios `// TODO`.
+
+**Resultado:**
+- El flujo ahora está completamente cableado:
+  - `PaymentOrderController` (capa **api**) recibe/valida la petición, la mapea y delega en los casos de uso.
+  - Las implementaciones de los casos de uso en **application.impl** orquestan la lógica y dependen de la abstracción `PaymentOrderLegacyClient`.
+  - La interfaz `PaymentOrderLegacyClient` en **domain.spi** actúa como puerto hacia el sistema legacy.
+  - `LegacyPaymentOrderSoapClient` en **infrastructure.soap** es el adapter concreto que implementa el puerto, actualmente con lógica stub que simula el servicio SOAP real.
+
+- Se mantiene la arquitectura hexagonal:
+  - La capa de dominio y aplicación **no dependen** de detalles SOAP.
+  - La integración SOAP puede ser sustituida en el futuro por una implementación real sin impactar la API ni los casos de uso.
+- El proyecto sigue compilando correctamente y el contexto de Spring arranca con los beans configurados (`@Service`, `@Component`).

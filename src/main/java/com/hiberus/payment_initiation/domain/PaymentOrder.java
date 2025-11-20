@@ -24,7 +24,8 @@ public class PaymentOrder {
     private OffsetDateTime lastUpdateDateTime;
 
     // Private constructor to enforce use of factory methods
-    private PaymentOrder() {
+    // Public constructor available for infrastructure layer to reconstruct from external systems
+    public PaymentOrder() {
     }
 
     /**
@@ -48,6 +49,27 @@ public class PaymentOrder {
         paymentOrder.creationDateTime = OffsetDateTime.now();
         paymentOrder.lastUpdateDateTime = OffsetDateTime.now();
         return paymentOrder;
+    }
+
+    /**
+     * Factory method to create a PaymentOrder from an initiation command.
+     * <p>
+     * This method is used by the application layer to create a domain entity
+     * from a command object.
+     *
+     * @param command the payment order initiation command
+     * @return a new PaymentOrder with INITIATED status
+     */
+    public static PaymentOrder fromInitiationCommand(
+            com.hiberus.payment_initiation.application.command.PaymentOrderInitiationCommand command) {
+        return create(
+                command.getExternalReference(),
+                command.getDebtorAccount(),
+                command.getCreditorAccount(),
+                command.getInstructedAmount(),
+                command.getRemittanceInformation(),
+                command.getRequestedExecutionDate()
+        );
     }
 
     // Getters
@@ -99,6 +121,44 @@ public class PaymentOrder {
     public void updateStatus(PaymentOrderStatus status) {
         this.status = status;
         this.lastUpdateDateTime = OffsetDateTime.now();
+    }
+
+    // Additional setters for infrastructure layer (used when reconstructing from external systems)
+    // These are public to allow infrastructure adapters to reconstruct entities from external systems
+    public void setExternalReference(String externalReference) {
+        this.externalReference = externalReference;
+    }
+
+    public void setDebtorAccount(Account debtorAccount) {
+        this.debtorAccount = debtorAccount;
+    }
+
+    public void setCreditorAccount(Account creditorAccount) {
+        this.creditorAccount = creditorAccount;
+    }
+
+    public void setInstructedAmount(Money instructedAmount) {
+        this.instructedAmount = instructedAmount;
+    }
+
+    public void setRemittanceInformation(String remittanceInformation) {
+        this.remittanceInformation = remittanceInformation;
+    }
+
+    public void setRequestedExecutionDate(LocalDate requestedExecutionDate) {
+        this.requestedExecutionDate = requestedExecutionDate;
+    }
+
+    public void setStatus(PaymentOrderStatus status) {
+        this.status = status;
+    }
+
+    public void setCreationDateTime(OffsetDateTime creationDateTime) {
+        this.creationDateTime = creationDateTime;
+    }
+
+    public void setLastUpdateDateTime(OffsetDateTime lastUpdateDateTime) {
+        this.lastUpdateDateTime = lastUpdateDateTime;
     }
 
     @Override
