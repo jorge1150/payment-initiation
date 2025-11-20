@@ -57,24 +57,24 @@ class PaymentOrderControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Create valid request DTO
+        // Create valid request DTO matching Postman collection example
         validRequestDto = new PaymentOrderInitiationRequestDto();
-        validRequestDto.setExternalReference("EXT-001");
-        validRequestDto.setDebtorAccount(new AccountReferenceDto("ES1234567890123456789012"));
-        validRequestDto.setCreditorAccount(new AccountReferenceDto("ES9876543210987654321098"));
-        validRequestDto.setInstructedAmount(new AmountDto(150.75, "EUR"));
-        validRequestDto.setRemittanceInformation("Test payment");
-        validRequestDto.setRequestedExecutionDate(LocalDate.now().plusDays(1));
+        validRequestDto.setExternalReference("EXT-1");
+        validRequestDto.setDebtorAccount(new AccountReferenceDto("EC12DEBTOR"));
+        validRequestDto.setCreditorAccount(new AccountReferenceDto("EC98CREDITOR"));
+        validRequestDto.setInstructedAmount(new AmountDto(150.75, "USD"));
+        validRequestDto.setRemittanceInformation("Factura 001-123");
+        validRequestDto.setRequestedExecutionDate(LocalDate.of(2025, 10, 31));
 
-        // Create payment order response
+        // Create payment order response matching Postman collection example
         paymentOrder = new PaymentOrder();
-        paymentOrder.setId("PO-12345678");
-        paymentOrder.setExternalReference("EXT-001");
-        paymentOrder.setDebtorAccount(new Account("ES1234567890123456789012"));
-        paymentOrder.setCreditorAccount(new Account("ES9876543210987654321098"));
-        paymentOrder.setInstructedAmount(new Money(BigDecimal.valueOf(150.75), "EUR"));
-        paymentOrder.setRemittanceInformation("Test payment");
-        paymentOrder.setRequestedExecutionDate(LocalDate.now().plusDays(1));
+        paymentOrder.setId("PO-0001");
+        paymentOrder.setExternalReference("EXT-1");
+        paymentOrder.setDebtorAccount(new Account("EC12DEBTOR"));
+        paymentOrder.setCreditorAccount(new Account("EC98CREDITOR"));
+        paymentOrder.setInstructedAmount(new Money(BigDecimal.valueOf(150.75), "USD"));
+        paymentOrder.setRemittanceInformation("Factura 001-123");
+        paymentOrder.setRequestedExecutionDate(LocalDate.of(2025, 10, 31));
         paymentOrder.setStatus(PaymentOrderStatus.PENDING_EXECUTION);
         paymentOrder.setCreationDateTime(OffsetDateTime.now());
         paymentOrder.setLastUpdateDateTime(OffsetDateTime.now());
@@ -91,9 +91,9 @@ class PaymentOrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequestDto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.paymentOrderId").value("PO-12345678"))
+                .andExpect(jsonPath("$.paymentOrderId").value("PO-0001"))
                 .andExpect(jsonPath("$.status").value("PENDING_EXECUTION"))
-                .andExpect(jsonPath("$.externalReference").value("EXT-001"));
+                .andExpect(jsonPath("$.externalReference").value("EXT-1"));
 
         // Verify that use case was invoked
         verify(initiatePaymentOrderUseCase).initiate(any());
@@ -134,8 +134,8 @@ class PaymentOrderControllerTest {
 
     @Test
     void shouldReturnStatus200WhenStatusIsRetrieved() throws Exception {
-        // Given
-        String paymentOrderId = "PO-12345678";
+        // Given - using paymentOrderId from Postman collection example
+        String paymentOrderId = "PO-0001";
         when(retrievePaymentOrderStatusUseCase.retrieveStatus(paymentOrderId))
                 .thenReturn(PaymentOrderStatus.EXECUTED);
         when(retrievePaymentOrderUseCase.retrieveById(paymentOrderId))
