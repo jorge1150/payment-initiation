@@ -1,0 +1,60 @@
+############################
+# Maven / Build
+############################
+/target/
+/out/
+*.jar
+*.war
+*.ear
+
+############################
+# Logs & temp
+############################
+*.log
+*.tmp
+*.swp
+*.swo
+hs_err_pid*
+.DS_Store
+
+############################
+# IntelliJ IDEA
+############################
+.idea/
+*.iml
+*.iws
+
+############################
+# Eclipse
+############################
+.project
+.classpath
+.settings/
+
+############################
+# VS Code
+############################
+.vscode/
+
+############################
+# OS / misc
+############################
+Thumbs.db
+.env
+.env.*
+
+############################
+# Node / frontend (por si agrego algo luego)
+############################
+node_modules/
+dist/
+build/
+
+############################
+# Reports / coverage
+############################
+/surefire-reports/
+/failsafe-reports/
+/jacoco.exec
+/jacoco-report/
+
