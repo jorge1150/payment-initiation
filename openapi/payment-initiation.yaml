@@ -1,2 +1,249 @@
-# OpenAPI contract for Payment Initiation service (to be completed)
+openapi: 3.0.3
+info:
+  title: Payment Initiation - PaymentOrder API
+  description: >
+    REST API para la iniciación y consulta de órdenes de pago (PaymentOrder),
+    expuesta como fachada moderna sobre el servicio SOAP legacy PaymentOrderService.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development
 
+paths:
+  /payment-initiation/payment-orders:
+    post:
+      summary: Initiate a new PaymentOrder
+      operationId: initiatePaymentOrder
+      tags:
+        - PaymentOrders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentOrderInitiationRequest'
+      responses:
+        '201':
+          description: PaymentOrder created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderResource'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error when calling legacy service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payment-initiation/payment-orders/{paymentOrderId}:
+    get:
+      summary: Retrieve a PaymentOrder by id
+      operationId: retrievePaymentOrder
+      tags:
+        - PaymentOrders
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          description: Identifier assigned by the system to the PaymentOrder
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PaymentOrder found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderResource'
+        '404':
+          description: PaymentOrder not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error when calling legacy service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payment-initiation/payment-orders/{paymentOrderId}/status:
+    get:
+      summary: Retrieve PaymentOrder status
+      operationId: retrievePaymentOrderStatus
+      tags:
+        - PaymentOrders
+      parameters:
+        - name: paymentOrderId
+          in: path
+          required: true
+          description: Identifier assigned by the system to the PaymentOrder
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PaymentOrder status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOrderStatusResource'
+        '404':
+          description: PaymentOrder not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error when calling legacy service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    PaymentOrderInitiationRequest:
+      type: object
+      required:
+        - externalReference
+        - debtorAccount
+        - creditorAccount
+        - instructedAmount
+        - requestedExecutionDate
+      properties:
+        externalReference:
+          type: string
+          description: >
+            External id of the payment order request (equivalent to externalId in the legacy SOAP service).
+          example: EXT-1
+        debtorAccount:
+          $ref: '#/components/schemas/AccountReference'
+        creditorAccount:
+          $ref: '#/components/schemas/AccountReference'
+        instructedAmount:
+          $ref: '#/components/schemas/Amount'
+        remittanceInformation:
+          type: string
+          description: Free text remittance information.
+          example: Factura 001-123
+        requestedExecutionDate:
+          type: string
+          format: date
+          description: Requested execution date of the payment.
+          example: '2025-10-31'
+
+    AccountReference:
+      type: object
+      required:
+        - iban
+      properties:
+        iban:
+          type: string
+          description: International Bank Account Number.
+          example: EC12DEBTOR
+
+    Amount:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: number
+          format: double
+          example: 150.75
+        currency:
+          type: string
+          example: USD
+
+    PaymentOrderResource:
+      type: object
+      description: Full representation of a PaymentOrder.
+      required:
+        - paymentOrderId
+        - status
+        - externalReference
+        - debtorAccount
+        - creditorAccount
+        - instructedAmount
+        - requestedExecutionDate
+      properties:
+        paymentOrderId:
+          type: string
+          description: Internal identifier generated by the system (maps to paymentOrderId from legacy SOAP).
+          example: PO-0001
+        status:
+          $ref: '#/components/schemas/PaymentOrderStatus'
+        externalReference:
+          type: string
+          example: EXT-1
+        debtorAccount:
+          $ref: '#/components/schemas/AccountReference'
+        creditorAccount:
+          $ref: '#/components/schemas/AccountReference'
+        instructedAmount:
+          $ref: '#/components/schemas/Amount'
+        remittanceInformation:
+          type: string
+          nullable: true
+        requestedExecutionDate:
+          type: string
+          format: date
+        creationDateTime:
+          type: string
+          format: date-time
+          description: When the PaymentOrder was created.
+        lastUpdateDateTime:
+          type: string
+          format: date-time
+          description: Last status update timestamp.
+
+    PaymentOrderStatusResource:
+      type: object
+      description: Minimal view used for status polling.
+      required:
+        - paymentOrderId
+        - status
+        - lastUpdateDateTime
+      properties:
+        paymentOrderId:
+          type: string
+          example: PO-0001
+        status:
+          $ref: '#/components/schemas/PaymentOrderStatus'
+        lastUpdateDateTime:
+          type: string
+          format: date-time
+          example: '2025-11-19T12:34:56Z'
+
+    PaymentOrderStatus:
+      type: string
+      description: >
+        Status of the PaymentOrder. Values inspired by BIAN and underlying legacy service.
+      enum:
+        - INITIATED
+        - PENDING_EXECUTION
+        - EXECUTED
+        - REJECTED
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Debtor IBAN is invalid
+        details:
+          type: array
+          items:
+            type: string
