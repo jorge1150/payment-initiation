@@ -161,3 +161,10 @@ Le pedí a la IA, actuando como desarrollador senior Java/Spring Boot en banca c
   - La capa de dominio y aplicación **no dependen** de detalles SOAP.
   - La integración SOAP puede ser sustituida en el futuro por una implementación real sin impactar la API ni los casos de uso.
 - El proyecto sigue compilando correctamente y el contexto de Spring arranca con los beans configurados (`@Service`, `@Component`).
+
+## 5. Manejo global de errores con GlobalExceptionHandler
+
+**Objetivo:** Estandarizar las respuestas de error de la API usando `ErrorResponseDto` y `@RestControllerAdvice`, mapeando:
+- `PaymentOrderNotFoundException` → HTTP 404, code `PAYMENT_ORDER_NOT_FOUND`.
+- `MethodArgumentNotValidException` → HTTP 400, code `VALIDATION_ERROR`, con detalle de campos inválidos.
+- `Exception` genérica → HTTP 500, code `INTERNAL_ERROR`.

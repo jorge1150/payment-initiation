@@ -55,3 +55,38 @@ La IA ayudó a diseñar las firmas del puerto (`initiatePaymentOrder`, `findById
 - Rellena timestamps.
 - Deja `// TODO` donde iría la llamada SOAP real.  
 Esto muestra una integración desacoplada: los casos de uso dependen de la abstracción y no del detalle SOAP.
+
+## 5. Estrategia de manejo de errores en la API
+
+**Decisión:**  
+Centralizar el manejo de errores en un `@RestControllerAdvice` (`GlobalExceptionHandler`) y estandarizar todas las respuestas de error mediante `ErrorResponseDto`.
+
+**Detalle de la estrategia:**
+- Para `PaymentOrderNotFoundException`:
+  - HTTP status: **404 NOT_FOUND**
+  - `code`: `PAYMENT_ORDER_NOT_FOUND`
+  - `message`: mensaje de la excepción (incluye el `paymentOrderId`).
+  - Uso principal en los casos de uso `RetrievePaymentOrderUseCase` y `RetrievePaymentOrderStatusUseCase`.
+
+- Para errores de validación de entrada (`MethodArgumentNotValidException` por @Valid en los DTOs):
+  - HTTP status: **400 BAD_REQUEST**
+  - `code`: `VALIDATION_ERROR`
+  - `message`: texto genérico ("Request validation failed").
+  - `details`: lista con los errores campo a campo en formato `"field: message"`.
+
+- Para cualquier otra excepción (`Exception`):
+  - HTTP status: **500 INTERNAL_SERVER_ERROR**
+  - `code`: `INTERNAL_ERROR`
+  - `message`: mensaje genérico que no expone detalles internos.
+  - Log a nivel ERROR con la traza para diagnóstico interno.
+
+**Cómo ayudó la IA:**  
+Con ayuda de la IA se definieron:
+- La estructura del `GlobalExceptionHandler`.
+- La forma de mapear las distintas excepciones a `ErrorResponseDto`.
+- Buenas prácticas bancarias: no filtrar detalles internos al consumidor, pero sí registrar información suficiente en logs (WARN para errores funcionales, ERROR para fallos inesperados).
+
+**Impacto:**  
+- La API ofrece respuestas de error coherentes y fáciles de consumir por clientes y herramientas (incluida la colección de Postman).
+- El código de los controladores se mantiene limpio, delegando el manejo de excepciones en una capa transversal.
+- Se refuerza la separación de responsabilidades y se mejora la observabilidad y mantenibilidad del servicio.

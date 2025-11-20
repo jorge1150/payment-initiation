@@ -54,9 +54,6 @@ public class PaymentOrderController {
     @PostMapping
     public ResponseEntity<PaymentOrderResourceDto> initiatePaymentOrder(
             @Valid @RequestBody PaymentOrderInitiationRequestDto requestDto) {
-        // TODO: Add exception handling for PaymentOrderNotFoundException and other exceptions
-        // This will be handled by a @ControllerAdvice in a future iteration
-
         var command = PaymentOrderMapper.toCommand(requestDto);
         PaymentOrder paymentOrder = initiatePaymentOrderUseCase.initiate(command);
         PaymentOrderResourceDto responseDto = PaymentOrderMapper.toResourceDto(paymentOrder);
@@ -75,9 +72,6 @@ public class PaymentOrderController {
     @GetMapping("/{paymentOrderId}")
     public ResponseEntity<PaymentOrderResourceDto> retrievePaymentOrder(
             @PathVariable String paymentOrderId) {
-        // TODO: Add exception handling for PaymentOrderNotFoundException
-        // This will be handled by a @ControllerAdvice in a future iteration
-
         PaymentOrder paymentOrder = retrievePaymentOrderUseCase.retrieveById(paymentOrderId);
         PaymentOrderResourceDto responseDto = PaymentOrderMapper.toResourceDto(paymentOrder);
 
@@ -95,9 +89,6 @@ public class PaymentOrderController {
     @GetMapping("/{paymentOrderId}/status")
     public ResponseEntity<PaymentOrderStatusResourceDto> retrievePaymentOrderStatus(
             @PathVariable String paymentOrderId) {
-        // TODO: Add exception handling for PaymentOrderNotFoundException
-        // This will be handled by a @ControllerAdvice in a future iteration
-
         PaymentOrderStatus status = retrievePaymentOrderStatusUseCase.retrieveStatus(paymentOrderId);
 
         // For status endpoint, we need to get the last update time from the full payment order
