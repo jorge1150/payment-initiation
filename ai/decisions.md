@@ -90,3 +90,41 @@ Con ayuda de la IA se definieron:
 - La API ofrece respuestas de error coherentes y fáciles de consumir por clientes y herramientas (incluida la colección de Postman).
 - El código de los controladores se mantiene limpio, delegando el manejo de excepciones en una capa transversal.
 - Se refuerza la separación de responsabilidades y se mejora la observabilidad y mantenibilidad del servicio.
+
+## 6. Estrategia de testing (use cases + API)
+
+**Decisión:**  
+Adoptar una estrategia de pruebas en dos niveles:
+
+1. **Tests unitarios de casos de uso (application)**  
+   - Se testean las clases de `application.impl` aisladas del framework:
+     - `InitiatePaymentOrderService`
+     - `RetrievePaymentOrderService`
+     - `RetrievePaymentOrderStatusService`
+   - Se usan **mocks** de `PaymentOrderLegacyClient` (Mockito) para:
+     - Verificar que los casos de uso delegan correctamente en el puerto de dominio.
+     - Validar el comportamiento cuando el puerto devuelve datos (`Optional.of`) o no devuelve nada (`Optional.empty` → `PaymentOrderNotFoundException`).
+   - No se levanta el contexto de Spring (`@SpringBootTest`), lo que hace los tests más rápidos y centrados en lógica de negocio.
+
+2. **Tests de controlador con MockMvc (API + errores)**  
+   - Se usa `@WebMvcTest(PaymentOrderController.class)` para probar:
+     - El mapeo de endpoints, códigos HTTP y estructura de las respuestas JSON.
+     - La integración del `GlobalExceptionHandler` con los controladores.
+   - Los casos de uso se mockean con `@MockBean`, verificando:
+     - Escenario feliz de creación (**201** Created).
+     - Errores de validación (**400** con `code="VALIDATION_ERROR"`).
+     - Recursos no encontrados (**404** con `code="PAYMENT_ORDER_NOT_FOUND"`).
+
+**Cómo ayudó la IA:**  
+La IA ayudó a:
+- Proponer la separación clara entre tests unitarios puros (sin Spring) y tests web con MockMvc.
+- Definir los casos de prueba clave que aportan mayor valor:
+  - Flujo feliz de iniciación de orden.
+  - Escenario “no encontrado”.
+  - Manejo de errores de validación.
+- Generar la plantilla de clases de test con las anotaciones correctas de JUnit 5, Mockito y Spring Test.
+
+**Impacto:**  
+- Se valida el comportamiento de negocio sin acoplar los tests a detalles de infraestructura.
+- Se asegura que la API cumple el contrato HTTP esperado (códigos y formato de error).
+- Facilita refactorizar implementación interna (por ejemplo, cambiar el adapter SOAP) sin romper los tests siempre que se mantenga el contrato y la lógica de los casos de uso.

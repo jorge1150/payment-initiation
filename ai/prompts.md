@@ -168,3 +168,41 @@ Le pedí a la IA, actuando como desarrollador senior Java/Spring Boot en banca c
 - `PaymentOrderNotFoundException` → HTTP 404, code `PAYMENT_ORDER_NOT_FOUND`.
 - `MethodArgumentNotValidException` → HTTP 400, code `VALIDATION_ERROR`, con detalle de campos inválidos.
 - `Exception` genérica → HTTP 500, code `INTERNAL_ERROR`.
+
+## 6. Generación de tests de casos de uso y controlador
+
+**Fecha:** 2025-11-20  
+**Objetivo:** Crear una suite básica de tests automatizados que valide:
+- La lógica de los casos de uso en `application.impl` (sin levantar Spring).
+- El comportamiento del controlador `PaymentOrderController` y del `GlobalExceptionHandler` usando MockMvc.
+
+**Uso de IA (Cursor):**  
+Le pedí a la IA, actuando como desarrollador senior enfocado en calidad, que:
+
+- Generara tests unitarios puros (JUnit 5 + Mockito) para:
+  - `InitiatePaymentOrderServiceTest`
+  - `RetrievePaymentOrderServiceTest`
+  - `RetrievePaymentOrderStatusServiceTest`
+
+  Con casos como:
+  - Iniciación de una orden de pago llamando al mock `PaymentOrderLegacyClient` y verificando que:
+    - Se invoca el puerto.
+    - Se devuelve un `PaymentOrder` con datos esperados.
+  - Recuperación de una orden existente (`findById` devuelve `Optional.of(...)`).
+  - Lanzamiento de `PaymentOrderNotFoundException` cuando `findById` o `findStatus` devuelven `Optional.empty()`.
+
+- Generara tests de controlador con MockMvc:
+  - `PaymentOrderControllerTest` usando `@WebMvcTest` y `@MockBean` para los casos de uso.
+  - Casos de prueba:
+    - `POST /payment-initiation/payment-orders` devuelve **201** y un JSON con `paymentOrderId` y `status`.
+    - Petición inválida (sin campos requeridos) devuelve **400** con `code = "VALIDATION_ERROR"` y lista de `details`.
+    - Cuando el caso de uso lanza `PaymentOrderNotFoundException`, el endpoint `GET /payment-initiation/payment-orders/{id}` devuelve **404** con `code = "PAYMENT_ORDER_NOT_FOUND"`.
+    - `GET /payment-initiation/payment-orders/{id}/status` devuelve **200** y `status = "EXECUTED"` (escenario feliz).
+
+**Resultado:**
+- Se crearon las clases de test bajo `src/test/java/com/hiberus/payment_initiation`:
+  - `application.impl.InitiatePaymentOrderServiceTest`
+  - `application.impl.RetrievePaymentOrderServiceTest`
+  - `application.impl.RetrievePaymentOrderStatusServiceTest`
+  - `api.PaymentOrderControllerTest`
+- `mvn test` pasa correctamente y los tests validan tanto la lógica de los casos de uso como el contrato HTTP (códigos de estado y formato de respuesta).
